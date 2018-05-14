@@ -1,15 +1,28 @@
-#ifndef CRYPTO_DEMO_APPSTRUCT_H
-#define CRYPTO_DEMO_APPSTRUCT_H
+#ifndef TRUSTCHAT_DEMO_H
+#define TRUSTCHAT_DEMO_H
 
-enum  crypto_demo_type
+enum  trustchat_demo_type
 {
-	DTYPE_CRYPTO_DEMO=0x1001
+	DTYPE_TRUSTCHAT_DEMO=0x3001,
+	DTYPE_TRUSTCHAT_EXPAND=0x3010,
+	DTYPE_TRUSTCHAT_STORE=0x3020
 };
-enum crypto_demo_subtype
+
+enum trustchat_demo_subtype
 {
 	SUBTYPE_LOGIN_INFO=0x01,
 	SUBTYPE_VERIFY_RETURN,
-	SUBTYPE_CHAT_MSG	
+	SUBTYPE_CHAT_MSG,	
+	SUBTYPE_DATA_KEY,	
+	SUBTYPE_USER_ADDR=0x10
+};
+
+enum trustchat_MSG_FLAG 
+{
+	TRUSTMSG_NORMAL=0x01,      // 
+	TRUSTMSG_PRIVATE=0x02,     // private data,should be crypted
+	TRUSTMSG_CRYPT=0x10,       //
+	TRUSTMSG_SIGN=0x20   
 };
 
 struct login_info
@@ -27,10 +40,9 @@ struct verify_return
         char nonce[DIGEST_SIZE];  //随机值
 } __attribute__((packed));
 
-struct session_msg{
-	char sender[DIGEST_SIZE]; //发送者名称
-	char receiver[DIGEST_SIZE]; //接收者名称
-	long  time;               //消息发送时间 
+struct chat_msg{
+	BYTE msg_head[8];        // should be TRUSTMSG
+	int msg_size;
 	char * msg;               //消息内容，以’\0’结尾 
 }__attribute__((packed));
 

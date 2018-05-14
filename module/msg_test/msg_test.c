@@ -18,29 +18,39 @@
 #include "memdb.h"
 #include "message.h"
 #include "ex_module.h"
+#include "sys_func.h"
 #include "app_struct.h"
 #include "expand_struct.h"
 #include "store_struct.h"
 
-struct timeval time_val={0,50*1000};
-
-int proc_verify(void * sub_proc,void * message);
-int user_addr_store(void * sub_proc,void * message);
-
-int login_verify_init(void * sub_proc,void * para)
+BYTE Buf[128];
+int msg_test_init(void * sub_proc,void * para)
 {
 	int ret;
 	// add youself's plugin init func here
 	return 0;
 }
 
-int login_verify_start(void * sub_proc,void * para)
+int msg_test_start(void * sub_proc,void * para)
 {
 	int ret;
 	void * recv_msg;
 	int i;
 	int type;
 	int subtype;
+	struct start_para * start_para=para;
+	
+        struct login_info login_data;
+	if(start_para->argc <3)
+	{
+		printf("error test msg! should be %s user_name passwd!\n",start_para->argv[0]);
+		return -EINVAL;
+	}
+	Strncpy(login_data.user,start_para->argv[1],DIGEST_SIZE);	
+	Strncpy(login_data.passwd,start_para->argv[2],DIGEST_SIZE);	
+	Memset(login_data.nonce,0,DIGEST_SIZE);	
+  
+        void * send_msg;
 
 
 	for(i=0;i<3000*1000;i++)
@@ -59,18 +69,71 @@ int login_verify_start(void * sub_proc,void * para)
 				message_get_type(recv_msg),message_get_subtype(recv_msg));
 			continue;
 		}
-		proc_verify(sub_proc,recv_msg);
+		if((type ==DTYPE_MESSAGE) &&
+			(subtype ==SUBTYPE_CONN_SYNI))
+		{
+			// login message trigger
+			send_msg=message_create(DTYPE_TRUSTCHAT_DEMO,SUBTYPE_LOGIN_INFO,NULL);
+			if(send_msg==NULL)
+				return -EINVAL;
+	 	
+			message_add_record(send_msg,&login_data);
+			ex_module_sendmsg(sub_proc,send_msg);
+		}
+		else if((type ==DTYPE_TRUSTCHAT_DEMO) &&
+			(subtype ==SUBTYPE_VERIFY_RETURN))
+		{
+			// login data return
+			ret=proc_login_return(sub_proc,recv_msg);
+			if(ret!=1)
+				return -EINVAL;
+			
+			struct chat_msg test_msg;		
+			Memcpy(test_msg.msg_head,"TRUSTMSG");
+			test_msg.msg="Do a first test!\n";
+			test_msg.msg_size=Strlen(test_msg.msg)+1;
+				
+			send_msg=message_create(DTYPE_TRUSTCHAT_DEMO,SUBTYPE_CHAT_MSG,NULL);
+			if(send_msg==NULL)
+				return -EINVAL;
+	 	
+			message_add_record(send_msg,&test_msg);
+			ex_module_sendmsg(sub_proc,send_msg);
+		}
 	}
 
 	return 0;
 };
 
+int proc_login_return(void * sub_proc,void * message)
+{
+	int type;
+	int subtype;
+	int ret;
+	printf("begin proc msg_test's login return \n");
+
+	type=message_get_type(message);
+	if(type!=DTYPE_TRUSTCHAT_DEMO)
+		return -EINVAL;
+	subtype=message_get_subtype(message);
+	if(subtype!=SUBTYPE_VERIFY_RETURN)
+		return -EINVAL;
+
+	struct verify_return * return_data;
+
+	ret=message_get_record(message,&return_data,0);
+	if(ret<0)
+		return ret;
+	printf("%s\n",return_data->ret_data);
+	return return_data->retval;	
+}
+/*
 int proc_verify(void * sub_proc,void * message)
 {
 	int type;
 	int subtype;
 	int ret;
-	printf("begin proc login_verify \n");
+	printf("begin proc msg_test \n");
 
 	type=message_get_type(message);
 	if(type!=DTYPE_TRUSTCHAT_DEMO)
@@ -167,3 +230,4 @@ int user_addr_store(void * sub_proc,void * message)
 	memdb_store(user_addr,DTYPE_TRUSTCHAT_STORE,SUBTYPE_STORE_USERADDR,login_data->user);
 	return 1;
 }
+*/
