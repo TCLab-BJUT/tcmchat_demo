@@ -19,7 +19,8 @@
 #include "message.h"
 #include "ex_module.h"
 #include "../include/app_struct.h"
-#include "../include/server_struct.h"
+#include "../include/expand_struct.h"
+#include "../include/store_struct.h"
 
 struct timeval time_val={0,50*1000};
 
@@ -68,10 +69,10 @@ int proc_broadcast(void * sub_proc,void * message)
 	int type;
 	int subtype;
 	int ret;
-	printf("begin proc login_verify \n");
+	printf("begin proc broadcast \n");
 
 	type=message_get_type(message);
-	if(type!=DTYPE_CRYPTO_DEMO)
+	if(type!=DTYPE_TRUSTCHAT_DEMO)
 		return -EINVAL;
 	subtype=message_get_subtype(message);
 	if(subtype!=SUBTYPE_CHAT_MSG)
@@ -80,28 +81,33 @@ int proc_broadcast(void * sub_proc,void * message)
 	void * new_msg;
 	void * record;
 	
-	struct session_msg  * chat_msg;
+	struct chat_msg  * chat_msg;
+	struct msg_info  * expand_info;
 	struct uuid_record * receiver_addr;
 	struct user_address * user_addr;
-	struct DB_RECORD * db_record;
-
-/*	
+	DB_RECORD * db_record;
+	MSG_EXPAND * msg_expand;
 
 	ret=message_get_record(message,&chat_msg,0);
 	if(ret<0)
 		return ret;
 	if(chat_msg==NULL)
 		return -EINVAL;	
-	
-	db_record=memdb_find_byname(chat_msg->sender,DTYPE_CRYPTO_DEMO,SUBTYPE_USER_ADDR);
+	ret=message_get_define_expand(message,&msg_expand,DTYPE_TRUSTCHAT_EXPAND,SUBTYPE_EXPAND_INFO);
+	if(ret<0)
+		return ret;
+	if(msg_expand==NULL)
+		return -EINVAL;
+	expand_info=msg_expand->expand;
+
+	db_record=memdb_find_byname(expand_info->sender,DTYPE_TRUSTCHAT_STORE,SUBTYPE_USER_ADDR);
 	if(db_record==NULL)
 	{
-		printf("user %s has not logined yet!\n",chat_msg->sender);
+		printf("user %s has not logined yet!\n",expand_info->sender);
 		return -EINVAL;
 	}
-*/
 
-	user_addr=memdb_get_first_record(DTYPE_CRYPTO_DEMO,SUBTYPE_USER_ADDR);
+	user_addr=memdb_get_first_record(DTYPE_TRUSTCHAT_STORE,SUBTYPE_USER_ADDR);
 	while(user_addr!=NULL)
 	{
 
@@ -116,7 +122,7 @@ int proc_broadcast(void * sub_proc,void * message)
 		if(ret<0)
 			return ret;
 		ex_module_sendmsg(sub_proc,new_msg);
-		user_addr=memdb_get_next_record(DTYPE_CRYPTO_DEMO,SUBTYPE_USER_ADDR);
+		user_addr=memdb_get_next_record(DTYPE_TRUSTCHAT_STORE,SUBTYPE_USER_ADDR);
 	}
 	return 0;
 }

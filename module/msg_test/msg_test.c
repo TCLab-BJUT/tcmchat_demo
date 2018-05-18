@@ -24,6 +24,7 @@
 #include "store_struct.h"
 
 BYTE Buf[128];
+void * proc_gen_chatmsg(char * msg_str,char * receiver,int flags, void *recv_msg);
 int msg_test_init(void * sub_proc,void * para)
 {
 	int ret;
@@ -49,6 +50,9 @@ int msg_test_start(void * sub_proc,void * para)
 	Strncpy(login_data.user,start_para->argv[1],DIGEST_SIZE);	
 	Strncpy(login_data.passwd,start_para->argv[2],DIGEST_SIZE);	
 	Memset(login_data.nonce,0,DIGEST_SIZE);	
+
+	proc_share_data_setvalue("user_name",login_data.user);
+
   
         void * send_msg;
 
@@ -87,19 +91,11 @@ int msg_test_start(void * sub_proc,void * para)
 			ret=proc_login_return(sub_proc,recv_msg);
 			if(ret!=1)
 				return -EINVAL;
-			
-			struct chat_msg test_msg;		
-			Memcpy(test_msg.msg_head,"TRUSTMSG");
-			test_msg.msg="Do a first test!\n";
-			test_msg.msg_size=Strlen(test_msg.msg)+1;
-				
-			send_msg=message_create(DTYPE_TRUSTCHAT_DEMO,SUBTYPE_CHAT_MSG,NULL);
-			if(send_msg==NULL)
-				return -EINVAL;
-	 	
-			message_add_record(send_msg,&test_msg);
-			ex_module_sendmsg(sub_proc,send_msg);
-		}
+			void * send_msg=proc_gen_chatmsg("Do a first chat",NULL,TRUSTMSG_NORMAL,recv_msg);
+			if(send_msg!=NULL)
+				ex_module_sendmsg(sub_proc,send_msg);
+		}			
+	
 	}
 
 	return 0;
@@ -127,6 +123,44 @@ int proc_login_return(void * sub_proc,void * message)
 	printf("%s\n",return_data->ret_data);
 	return return_data->retval;	
 }
+
+
+void * proc_gen_chatmsg(char * msg_str,char * receiver,int flags,void * recv_msg)
+{
+	char local_uuid[DIGEST_SIZE];
+	char proc_name[DIGEST_SIZE];
+	char user[DIGEST_SIZE];
+	struct chat_msg test_msg;		
+	struct msg_info * expand_info;
+	int ret;
+
+	expand_info=Talloc0(sizeof(*expand_info));
+	if(expand_info==NULL)
+		return -ENOMEM;
+
+	ret=proc_share_data_getvalue("uuid",local_uuid);
+	ret=proc_share_data_getvalue("proc_name",proc_name);
+	ret=proc_share_data_getvalue("user_name",expand_info->sender);
+
+	Memcpy(test_msg.msg_head,"TRUSTMSG",8);
+	test_msg.msg=msg_str;
+	test_msg.msg_size=Strlen(test_msg.msg)+1;
+
+	get_random_uuid(expand_info->uuid);
+	if(receiver!=NULL)
+		Strncpy(expand_info->receiver,receiver,DIGEST_SIZE);		
+        expand_info->flags=flags;	
+
+	void * send_msg=message_create(DTYPE_TRUSTCHAT_DEMO,SUBTYPE_CHAT_MSG,NULL);
+	if(send_msg==NULL)
+		return -EINVAL;
+		
+	message_add_record(send_msg,&test_msg);
+	message_add_expand_data(send_msg,DTYPE_TRUSTCHAT_EXPAND,SUBTYPE_EXPAND_INFO,expand_info);
+
+	return send_msg;
+}
+	
 /*
 int proc_verify(void * sub_proc,void * message)
 {
