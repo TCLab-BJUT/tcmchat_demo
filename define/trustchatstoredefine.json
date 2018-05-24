@@ -1,0 +1,90 @@
+{
+	"head":
+	{
+		"name":"trustchat_store_subtype",
+		"type":"SUBTYPELIST"
+	},
+	"record":
+	{
+		"type":"TRUSTCHAT_STORE",
+		"elem_no":2,
+		"elemlist":
+		[
+			"STORE_MSG",
+			"USER_ADDR=0x10"
+		]
+	}
+}
+{
+	"head":
+	{
+		"name":"trustchat_RECV_FLAG",
+		"type":"NAMELIST"
+	},
+	"record":
+	{
+		"elem_no":6,
+		"elemlist":
+		[
+			"SELF=0x01",
+			"RECV=0x02",
+			"DECRYPT=0x10",
+			"VERIFY=0x20",
+			"VERIFY_FAIL=0x0100",
+			"DATA_ERR=0x0200"
+		]
+	}
+}
+{
+	"head":
+	{
+		"name":"store_msg",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"TRUSTCHAT_STORE",
+		"subtype":"STORE_MSG",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"info","type":"ARRAY","size":1,"ref_name":"msg_info"},
+				{"name":"msg","type":"ARRAY","size":1,"ref_name":"chat_msg"},
+				{"name":"store_flags","type":"FLAG","ref_name":"trustchat_RECV_FLAG"},
+				{"name":"key","type":"ARRAY","size":1,"ref_name":"session_key"},
+				{"name":"sign","type":"ARRAY","size":1,"ref_name":"sign_data"}
+			]
+		},
+		"index":
+		{
+			"flag":"INDEX",
+			"elemlist":"info.uuid"
+		}
+	}	
+}
+{
+	"head":
+	{
+		"name":"user_addr",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"TRUSTCHAT_STORE",
+		"subtype":"USER_ADDR",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"user","type":"STRING","size":32},
+				{"name":"addr","type":"UUID"}
+			]
+		},
+		"index":
+		{
+			"flag":"INDEX",
+			"elemlist":"user,addr"
+		}
+	}	
+}

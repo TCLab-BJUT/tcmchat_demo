@@ -1,0 +1,132 @@
+{
+	"head":
+	{
+		"name":"trustchat_demo_type",
+		"type":"TYPELIST"
+	},
+	"record":
+	{
+		"elem_no":3,
+		"elemlist":
+		[
+			"TRUSTCHAT_DEMO=0x3001",
+			"TRUSTCHAT_EXPAND=0x3010",
+			"TRUSTCHAT_STORE=0x3020"
+		]
+	}
+}
+{
+	"head":
+	{
+		"name":"trustchat_demo_subtype",
+		"type":"SUBTYPELIST"
+	},
+	"record":
+	{
+		"type":"TRUSTCHAT_DEMO",
+		"elem_no":4,
+		"elemlist":
+		[
+			"LOGIN_INFO=0x01",
+			"VERIFY_RETURN",
+			"CHAT_MSG",
+			"DATA_KEY"
+		]
+	}
+}
+{
+	"head":
+	{
+		"name":"trustchat_MSG_FLAG",
+		"type":"NAMELIST"
+	},
+	"record":
+	{
+		"elem_no":4,
+		"elemlist":
+		[
+			"NORMAL=0x01",
+			"PRIVATE=0x02",
+			"CRYPT=0x10",
+			"SIGN=0x20"
+		]
+	}
+}
+{
+	"head":
+	{
+		"name":"login_info",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"TRUSTCHAT_DEMO",
+		"subtype":"LOGIN_INFO",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"user","type":"STRING","size":32},
+				{"name":"passwd","type":"STRING","size":32},
+				{"name":"nonce","type":"BINDATA","size":32}
+			]
+		},
+		"index":
+		{
+			"flag":"INDEX",
+			"elemlist":"user,passwd"
+		}
+	}	
+}
+{
+	"head":
+	{
+		"name":"verify_return",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"TRUSTCHAT_DEMO",
+		"subtype":"VERIFY_RETURN",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"retval","type":"INT"},
+				{"name":"ret_data_size","type":"INT"},
+				{"name":"ret_data","type":"DEFSTR","def":"ret_data_size"}
+			]
+		}
+		"index":
+		{
+			"flag":"INDEX",
+			"elemlist":"retval,ret_data_size,ret_data"
+		}
+	}	
+}
+{
+	"head":
+	{
+		"name":"chat_msg",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"TRUSTCHAT_DEMO",
+		"subtype":"CHAT_MSG",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"msg_head","type":"STRING","size":8},
+				{"name":"msg_size","type":"INT"},
+				{"name":"msg","type":"DEFSTR","def":"msg_size"}
+			]
+		},
+		"index":
+		{
+			"flag":"INDEX",
+			"elemlist":"msg_head,msg_size,msg"
+		}
+	}	
+}
