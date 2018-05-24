@@ -25,6 +25,7 @@
 
 BYTE Buf[128];
 void * proc_gen_chatmsg(char * msg_str,char * receiver,int flags, void *recv_msg);
+int  proc_store_msg(void * msg);
 int msg_test_init(void * sub_proc,void * para)
 {
 	int ret;
@@ -92,9 +93,18 @@ int msg_test_start(void * sub_proc,void * para)
 			if(ret!=1)
 				return -EINVAL;
 			void * send_msg=proc_gen_chatmsg("Do a first chat",NULL,TRUSTMSG_NORMAL,recv_msg);
-			if(send_msg!=NULL)
-				ex_module_sendmsg(sub_proc,send_msg);
+			if(send_msg ==NULL)
+				return -EINVAL;
+			ret=proc_store_msg(recv_msg);
+			ex_module_sendmsg(sub_proc,send_msg);
 		}			
+		else if((type ==DTYPE_TRUSTCHAT_DEMO) &&
+			(subtype==SUBTYPE_CHAT_MSG))
+		{
+			//receive chat msg
+			ret=proc_store_msg(recv_msg);
+
+		}
 	
 	}
 
@@ -159,6 +169,65 @@ void * proc_gen_chatmsg(char * msg_str,char * receiver,int flags,void * recv_msg
 	message_add_expand_data(send_msg,DTYPE_TRUSTCHAT_EXPAND,SUBTYPE_EXPAND_INFO,expand_info);
 
 	return send_msg;
+}
+
+int  proc_store_msg(void * recv_msg)
+{
+	char local_uuid[DIGEST_SIZE];
+	char proc_name[DIGEST_SIZE];
+	char user[DIGEST_SIZE];
+	struct chat_msg * chat_msg;		
+	struct msg_info * expand_info;
+	struct store_msg * store_message;
+	DB_RECORD * db_record;
+	MSG_EXPAND * msg_expand;
+	
+	int ret;
+
+	expand_info=Talloc0(sizeof(*expand_info));
+	if(expand_info==NULL)
+		return -ENOMEM;
+
+	ret=proc_share_data_getvalue("uuid",local_uuid);
+	ret=proc_share_data_getvalue("proc_name",proc_name);
+	ret=proc_share_data_getvalue("user_name",user);
+
+	ret=message_get_record(recv_msg,&chat_msg,0);
+	if(ret<0)
+		return ret;
+	
+	ret=message_get_define_expand(recv_msg,&msg_expand,DTYPE_TRUSTCHAT_EXPAND,SUBTYPE_EXPAND_INFO);	
+	if(ret<0)
+		return ret;
+	if(msg_expand==NULL)
+		return -EINVAL;
+	expand_info=msg_expand->expand;
+
+	db_record=memdb_find(expand_info->uuid,DTYPE_TRUSTCHAT_STORE,SUBTYPE_STORE_MSG);
+	if(db_record==NULL)
+	// first message store
+	{
+		store_message=Talloc0(sizeof(*store_message));
+		store_message->info=expand_info;
+		store_message->msg=chat_msg;
+		if(Strncmp(user,expand_info->sender,DIGEST_SIZE)==0)
+		{
+			store_message->store_flags=CHAT_MSG_SELF;
+		}
+		else
+		{
+			store_message->store_flags=CHAT_MSG_RECV;
+		}
+				
+		memdb_store(store_message,DTYPE_TRUSTCHAT_STORE,SUBTYPE_STORE_MSG,NULL);
+
+	}
+	else
+	{
+	
+	}
+
+	return 1;
 }
 	
 /*

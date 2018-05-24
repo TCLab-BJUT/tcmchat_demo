@@ -14,7 +14,6 @@ enum trustchat_demo_subtype
 	SUBTYPE_VERIFY_RETURN,
 	SUBTYPE_CHAT_MSG,	
 	SUBTYPE_DATA_KEY,	
-	SUBTYPE_USER_ADDR=0x10
 };
 
 enum trustchat_MSG_FLAG 
