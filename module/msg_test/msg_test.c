@@ -41,6 +41,7 @@ int msg_test_start(void * sub_proc,void * para)
 	int type;
 	int subtype;
 	struct start_para * start_para=para;
+	int state=0;
 	
         struct login_info login_data;
 	if(start_para->argc <3)
@@ -81,9 +82,9 @@ int msg_test_start(void * sub_proc,void * para)
 			send_msg=message_create(DTYPE_TRUSTCHAT_DEMO,SUBTYPE_LOGIN_INFO,NULL);
 			if(send_msg==NULL)
 				return -EINVAL;
-	 	
 			message_add_record(send_msg,&login_data);
 			ex_module_sendmsg(sub_proc,send_msg);
+			state++;
 		}
 		else if((type ==DTYPE_TRUSTCHAT_DEMO) &&
 			(subtype ==SUBTYPE_VERIFY_RETURN))
@@ -92,19 +93,43 @@ int msg_test_start(void * sub_proc,void * para)
 			ret=proc_login_return(sub_proc,recv_msg);
 			if(ret!=1)
 				return -EINVAL;
-			void * send_msg=proc_gen_chatmsg("Do a first chat",NULL,TRUSTMSG_NORMAL,recv_msg);
 			if(send_msg ==NULL)
 				return -EINVAL;
-			ret=proc_store_msg(recv_msg);
+//			ret=proc_store_msg(recv_msg);
+		        void * send_msg=proc_gen_chatmsg("Do the first chat",NULL,TRUSTMSG_NORMAL,recv_msg);
 			ex_module_sendmsg(sub_proc,send_msg);
+			state++;
 		}			
 		else if((type ==DTYPE_TRUSTCHAT_DEMO) &&
 			(subtype==SUBTYPE_CHAT_MSG))
 		{
 			//receive chat msg
-			ret=proc_store_msg(recv_msg);
 
-		}
+			ret=proc_process_chatmsg(sub_proc,recv_msg);
+			
+//			if(ret>=0)
+//				ret=proc_store_msg(recv_msg);
+
+			if(state==2)
+			{
+		        	void * send_msg=proc_gen_chatmsg("Do the second chat","xiyang",TRUSTMSG_CRYPT,recv_msg);
+				if(send_msg ==NULL)
+					return -EINVAL;
+//				ret=proc_store_msg(recv_msg);
+				ex_module_sendmsg(sub_proc,send_msg);
+				state++;
+			}
+			else if(state==3)
+			{
+				void * send_msg=proc_gen_chatmsg("Do the third  chat","xiyang",TRUSTMSG_SIGN,recv_msg);
+				if(send_msg ==NULL)
+					return -EINVAL;
+//				ret=proc_store_msg(recv_msg);
+				ex_module_sendmsg(sub_proc,send_msg);
+				state++;
+			}
+			
+		}			
 	
 	}
 
@@ -228,6 +253,33 @@ int  proc_store_msg(void * recv_msg)
 	}
 
 	return 1;
+}
+
+int proc_process_chatmsg(void * sub_proc,void * recv_msg)
+{
+	struct chat_msg * chat_msg;		
+	struct msg_info * expand_info;
+	struct store_msg * store_message;
+	DB_RECORD * db_record;
+	MSG_EXPAND * msg_expand;
+	int ret;
+
+	ret=message_get_record(recv_msg,&chat_msg,0);
+	if(ret<0)
+		return ret;
+	
+	ret=message_get_define_expand(recv_msg,&msg_expand,DTYPE_TRUSTCHAT_EXPAND,SUBTYPE_EXPAND_INFO);	
+	if(ret<0)
+		return ret;
+	if(msg_expand==NULL)
+		return -EINVAL;
+	expand_info=msg_expand->expand;
+	
+	printf("sender: %s   receiver: %s\n",expand_info->sender,expand_info->receiver);
+	printf("msg: %s\n", chat_msg->msg);
+
+	return 0;
+	
 }
 	
 /*

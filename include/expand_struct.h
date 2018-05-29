@@ -24,6 +24,7 @@ struct session_key{
 
 struct sign_data{
 	BYTE sign_key_uuid;
+	int  sign_result;        // 0 is not verify, 1 is verify succeed, -1 is verify fail
 	int sign_size;
 	BYTE * sign_data;
 }__attribute__((packed));

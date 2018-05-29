@@ -85,6 +85,7 @@
 			"elem_desc":
 			[
 				{"name":"sign_key_uuid","type":"UUID"},
+				{"name":"sign_result","type":"INT"},
 				{"name":"sign_size","type":"INT"},
 				{"name":"sign_data","type":"DEFINE","def":"sign_size"}
 			]

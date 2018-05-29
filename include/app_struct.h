@@ -45,4 +45,5 @@ struct chat_msg{
 	char * msg;               //消息内容，以’\0’结尾 
 }__attribute__((packed));
 
+
 #endif

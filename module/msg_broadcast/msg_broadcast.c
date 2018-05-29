@@ -88,11 +88,13 @@ int proc_broadcast(void * sub_proc,void * message)
 	DB_RECORD * db_record;
 	MSG_EXPAND * msg_expand;
 
+/*
 	ret=message_get_record(message,&chat_msg,0);
 	if(ret<0)
 		return ret;
 	if(chat_msg==NULL)
 		return -EINVAL;	
+*/
 	ret=message_get_define_expand(message,&msg_expand,DTYPE_TRUSTCHAT_EXPAND,SUBTYPE_EXPAND_INFO);
 	if(ret<0)
 		return ret;
@@ -100,14 +102,14 @@ int proc_broadcast(void * sub_proc,void * message)
 		return -EINVAL;
 	expand_info=msg_expand->expand;
 
-	db_record=memdb_find_byname(expand_info->sender,DTYPE_TRUSTCHAT_STORE,SUBTYPE_USER_ADDR);
+	db_record=memdb_find_byname(expand_info->sender,DTYPE_TRUSTCHAT_STORE,SUBTYPE_STORE_USERADDR);
 	if(db_record==NULL)
 	{
 		printf("user %s has not logined yet!\n",expand_info->sender);
 		return -EINVAL;
 	}
 
-	user_addr=memdb_get_first_record(DTYPE_TRUSTCHAT_STORE,SUBTYPE_USER_ADDR);
+	user_addr=memdb_get_first_record(DTYPE_TRUSTCHAT_STORE,SUBTYPE_STORE_USERADDR);
 	while(user_addr!=NULL)
 	{
 
@@ -122,7 +124,7 @@ int proc_broadcast(void * sub_proc,void * message)
 		if(ret<0)
 			return ret;
 		ex_module_sendmsg(sub_proc,new_msg);
-		user_addr=memdb_get_next_record(DTYPE_TRUSTCHAT_STORE,SUBTYPE_USER_ADDR);
+		user_addr=memdb_get_next_record(DTYPE_TRUSTCHAT_STORE,SUBTYPE_STORE_USERADDR);
 	}
 	return 0;
 }
