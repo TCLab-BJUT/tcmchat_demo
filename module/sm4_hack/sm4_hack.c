@@ -18,22 +18,21 @@
 #include "memdb.h"
 #include "message.h"
 #include "ex_module.h"
-#include "../include/app_struct.h"
-#include "../include/server_struct.h"
-#include "sm4_attack.h"
+#include "sys_func.h"
+#include "app_struct.h"
+#include "server_struct.h"
+#include "sm4_hack.h"
 
-
-static struct timeval time_val={0,50*1000};
 static char passwd[DIGEST_SIZE];
 
-int sm4_attack_init(void * sub_proc,void * para)
+int sm4_hack_init(void * sub_proc,void * para)
 {
 	int ret;
 	// add youself's plugin init func here
 	return 0;
 }
 
-int sm4_attack_start(void * sub_proc,void * para)
+int sm4_hack_start(void * sub_proc,void * para)
 {
 	int ret;
 	void * recv_msg;
@@ -96,13 +95,10 @@ int proc_hack_message(void * sub_proc,void * message)
 	type=message_get_type(message);
 	subtype=message_get_subtype(message);
 
-        bind_blob_size=message_get_blob(message,&bind_blob);
+        bind_blob_size=message_output_record_blob(message,&bind_blob);
         if(bind_blob_size<=0)
                 return -EINVAL;
 	char brute_pass[9];
-
-	BYTE comp_value[DIGEST_SIZE/4*3];
-	Memset(comp_value,0,DIGEST_SIZE/4*3);
 
 	for(i=0;i<10000000;i++)
 	{
@@ -112,10 +108,15 @@ int proc_hack_message(void * sub_proc,void * message)
 		if(blob_size<0)
 			return blob_size;
 
-		if(i>123455)
-			printf("test to 123455 \n");
-		if(Memcmp(blob+DIGEST_SIZE/2,comp_value,DIGEST_SIZE/4*3)==0)
+		if(i%100000==0)
 		{
+			printf("test to passwd %d\n",i);
+		}
+
+		if(Memcmp(blob,"TRUSTMSG",8)==0)
+		{
+			printf("Hack succeed!\n");	
+
         		message_set_blob(message,blob,blob_size);
 			int flag=message_get_flag(message);
         		message_set_flag(message,flag&(~MSG_FLAG_CRYPT));
